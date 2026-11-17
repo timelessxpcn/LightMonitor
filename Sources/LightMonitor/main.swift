@@ -3,13 +3,14 @@ import Combine
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let settings = SettingsStore()
-    private lazy var sampler = Sampler(settings: settings)
+    private let history = HistoryStore()
+    private lazy var sampler = Sampler(settings: settings, history: history)
     private let alerts = AlertManager()
     private var statusController: StatusController?
     private var cancellables = Set<AnyCancellable>()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let controller = StatusController(sampler: sampler, settings: settings)
+        let controller = StatusController(sampler: sampler, settings: settings, history: history)
         statusController = controller
         sampler.onSnapshot = { [weak self] snap in
             controller.update(snap)
@@ -29,6 +30,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .sink { [weak self] enabled in
                 if enabled { self?.alerts.requestAuthorization() }
             }
+            .store(in: &cancellables)
+
+        history.enabled = settings.historyEnabled
+        settings.$historyEnabled
+            .dropFirst()
+            .sink { [weak self] enabled in self?.history.enabled = enabled }
             .store(in: &cancellables)
     }
 

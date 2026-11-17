@@ -27,6 +27,7 @@ final class Sampler: ObservableObject {
     var onSnapshot: ((Snapshot) -> Void)?
 
     private let settings: SettingsStore
+    private let history: HistoryStore
     private let cpuReader = CPUReader()
     private let memReader = MemoryReader()
     private let netReader = NetworkReader()
@@ -56,8 +57,9 @@ final class Sampler: ObservableObject {
         didSet { if interval != oldValue { start() } }
     }
 
-    init(settings: SettingsStore) {
+    init(settings: SettingsStore, history: HistoryStore) {
         self.settings = settings
+        self.history = history
     }
 
     func start() {
@@ -130,6 +132,17 @@ final class Sampler: ObservableObject {
 
         s.selfUsage = selfReader.read()
         s.timestamp = Date()
+
+        // 历史落盘（内部 30s 节流 + 开关门控）
+        var values: [String: Double] = [:]
+        if let cpu = s.cpu { values["cpu"] = cpu.total }
+        if let m = s.memory, m.total > 0 { values["mem"] = Double(m.used) / Double(m.total) }
+        values["net_rx"] = s.netRx
+        values["net_tx"] = s.netTx
+        if s.disk.total > 0 { values["disk"] = Double(s.disk.used) / Double(s.disk.total) }
+        if let gpu = s.gpu { values["gpu"] = gpu }
+        history.record(ts: s.timestamp.timeIntervalSince1970, values: values)
+
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             s.topCPU = self.snapshot.topCPU

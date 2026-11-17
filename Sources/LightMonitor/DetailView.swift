@@ -3,6 +3,7 @@ import SwiftUI
 struct DetailView: View {
     @ObservedObject var sampler: Sampler
     @ObservedObject var settings: SettingsStore
+    @ObservedObject var history: HistoryStore
 
     var body: some View {
         let s = sampler.snapshot
@@ -16,6 +17,7 @@ struct DetailView: View {
                 if let gpu = s.gpu { gpuSection(gpu) }
                 if let bat = s.battery { batterySection(bat) }
                 processSection(s)
+                if settings.historyEnabled { historySection }
                 settingsSection
                 alertSection
             }
@@ -203,6 +205,49 @@ struct DetailView: View {
         }
     }
 
+    // MARK: History
+
+    private var historySection: some View {
+        // revision 驱动重绘（每 30s 落盘后 +1），避免每秒查库
+        let _ = history.revision
+        let range = settings.historyRange
+        return SectionBox(title: "历史曲线", trailing: "本地保存 7 天") {
+            VStack(alignment: .leading, spacing: 8) {
+                Picker("", selection: $settings.historyRange) {
+                    Text("30 分钟").tag(1800)
+                    Text("24 小时").tag(86400)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+
+                historyRow("CPU", key: "cpu", range: range, fixedMax: 1, color: .blue)
+                historyRow("内存", key: "mem", range: range, fixedMax: 1, color: .green)
+                historyRow("网络 ↓", key: "net_rx", range: range, fixedMax: nil, color: .cyan)
+            }
+        }
+    }
+
+    private func historyRow(_ label: String, key: String, range: Int, fixedMax: Double?, color: Color) -> some View {
+        let data = history.series(key: key, range: range)
+        let values = data.map { $0.1 }
+        let maxV = fixedMax ?? max(values.max() ?? 0, 1024)
+        let norm = values.map { min(1, $0 / maxV) }
+        let current: String = {
+            guard let last = values.last else { return "—" }
+            if fixedMax != nil { return Fmt.pct(last) }
+            return Fmt.rate(last) + "/s"
+        }()
+        return VStack(alignment: .leading, spacing: 2) {
+            HStack {
+                Text(label).font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                Text(current).font(.caption.monospacedDigit())
+            }
+            Sparkline(points: norm, color: color)
+                .frame(height: 36)
+        }
+    }
+
     // MARK: Settings
 
     private var settingsSection: some View {
@@ -221,6 +266,7 @@ struct DetailView: View {
                 }
                 .pickerStyle(.segmented)
                 Toggle("开机自启", isOn: $settings.launchAtLogin)
+                Toggle("记录历史曲线（本地）", isOn: $settings.historyEnabled)
                 HStack {
                     Spacer()
                     Button("退出 LightMonitor") { NSApp.terminate(nil) }
@@ -291,5 +337,32 @@ private struct SectionBox<Content: View>: View {
         }
         .padding(10)
         .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+/// 轻量火花线：纯 Path 绘制，无 Charts 框架依赖
+private struct Sparkline: View {
+    let points: [Double]   // 归一化 0...1
+    let color: Color
+
+    var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width, h = geo.size.height
+            if points.count > 1 {
+                Path { p in
+                    for (i, v) in points.enumerated() {
+                        let pt = CGPoint(x: w * CGFloat(i) / CGFloat(points.count - 1),
+                                         y: h * (1 - CGFloat(v)))
+                        if i == 0 { p.move(to: pt) } else { p.addLine(to: pt) }
+                    }
+                }
+                .stroke(color, style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
+            } else {
+                Text("数据积累中…")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .frame(width: w, height: h, alignment: .center)
+            }
+        }
     }
 }

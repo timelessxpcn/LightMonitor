@@ -10,7 +10,7 @@ swiftc -O -swift-version 5 \
     Sources/LightMonitor/*.swift \
     -o "$OUT/LightMonitor" \
     -framework AppKit -framework SwiftUI -framework IOKit \
-    -framework ServiceManagement -framework Combine
+    -framework ServiceManagement -framework Combine -lsqlite3
 
 APP="../LightMonitor.app"
 mkdir -p "$APP/Contents/MacOS"

@@ -17,6 +17,8 @@ final class SettingsStore: ObservableObject {
     @Published var memThreshold: Double { didSet { defaults.set(memThreshold, forKey: "memThreshold") } }
     @Published var diskThreshold: Double { didSet { defaults.set(diskThreshold, forKey: "diskThreshold") } }
     @Published var processSort: Int { didSet { defaults.set(processSort, forKey: "processSort") } }
+    @Published var historyEnabled: Bool { didSet { defaults.set(historyEnabled, forKey: "historyEnabled") } }
+    @Published var historyRange: Int { didSet { defaults.set(historyRange, forKey: "historyRange") } }
     @Published var launchAtLogin: Bool {
         didSet {
             guard launchAtLogin != oldValue else { return }
@@ -37,7 +39,8 @@ final class SettingsStore: ObservableObject {
             "refreshInterval": 1.0,
             "alertsEnabled": false,
             "cpuThreshold": 90.0, "memThreshold": 90.0, "diskThreshold": 90.0,
-            "processSort": 0
+            "processSort": 0,
+            "historyEnabled": true, "historyRange": 1800
         ])
         showCPU = defaults.bool(forKey: "showCPU")
         showRAM = defaults.bool(forKey: "showRAM")
@@ -51,6 +54,8 @@ final class SettingsStore: ObservableObject {
         memThreshold = defaults.double(forKey: "memThreshold")
         diskThreshold = defaults.double(forKey: "diskThreshold")
         processSort = defaults.integer(forKey: "processSort")
+        historyEnabled = defaults.bool(forKey: "historyEnabled")
+        historyRange = defaults.integer(forKey: "historyRange")
         launchAtLogin = SMAppService.mainApp.status == .enabled
     }
 }
