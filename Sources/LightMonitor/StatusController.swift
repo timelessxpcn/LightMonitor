@@ -25,13 +25,9 @@ final class StatusController: NSObject, NSPopoverDelegate {
         popover.behavior = .transient
         popover.animates = false
         popover.delegate = self
-
-        sampler.onSnapshot = { [weak self] snap in
-            self?.updateTitle(snap)
-        }
     }
 
-    private func updateTitle(_ s: Snapshot) {
+    func update(_ s: Snapshot) {
         // 菜单栏位图重绘是主要 CPU 成本：节流至 ~2s 一次；面板数据仍按采样频率实时
         let now = Date()
         guard now.timeIntervalSince(lastTitleUpdate) >= 1.9 else { return }
@@ -52,6 +48,12 @@ final class StatusController: NSObject, NSPopoverDelegate {
             let d = s.disk
             parts.append("DSK " + (d.total > 0 ? Fmt.pct(Double(d.used) / Double(d.total)) : "--"))
         }
+        if settings.showGPU {
+            parts.append("GPU " + (s.gpu.map { Fmt.pct($0) } ?? "--"))
+        }
+        if settings.showBattery {
+            parts.append("BAT " + (s.battery.map { "\($0.percent)%" } ?? "--"))
+        }
         let text = parts.isEmpty ? "LM" : parts.joined(separator: "  ")
         guard text != lastTitle else { return }   // 值未变化不重绘
         lastTitle = text
@@ -70,14 +72,16 @@ final class StatusController: NSObject, NSPopoverDelegate {
         guard let button = statusItem.button else { return }
         let root = DetailView(sampler: sampler, settings: settings)
         let host = NSHostingController(rootView: root)
-        host.view.frame = NSRect(x: 0, y: 0, width: 340, height: 480)
+        host.view.frame = NSRect(x: 0, y: 0, width: 340, height: 560)
         popover.contentViewController = host
-        popover.contentSize = NSSize(width: 340, height: 480)
+        popover.contentSize = NSSize(width: 340, height: 560)
+        sampler.panelOpen = true
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         popover.contentViewController?.view.window?.makeKey()
     }
 
     func popoverDidClose(_ notification: Notification) {
         popover.contentViewController = nil
+        sampler.panelOpen = false
     }
 }

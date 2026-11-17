@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="680" height="880" viewBox="0 0 680 880" font-family="-apple-system, 'SF Pro Text', 'PingFang SC', sans-serif">
-  <rect width="680" height="880" rx="24" fill="#1e293b"/>
-  <rect x="2" y="2" width="676" height="876" rx="22" fill="#0f172a" stroke="#334155" stroke-width="2"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="1220" viewBox="0 0 680 1220" font-family="-apple-system, 'SF Pro Text', 'PingFang SC', sans-serif">
+  <rect width="680" height="1220" rx="24" fill="#1e293b"/>
+  <rect x="2" y="2" width="676" height="1216" rx="22" fill="#0f172a" stroke="#334155" stroke-width="2"/>
 
   <!-- header -->
   <text x="36" y="56" font-size="28" font-weight="700" fill="#f8fafc">LightMonitor</text>
@@ -61,5 +61,30 @@
   <rect x="48" y="752" width="362" height="12" rx="6" fill="#fbbf24"/>
   <text x="48" y="796" font-size="17" fill="#94a3b8" font-family="ui-monospace, Menlo, monospace">读 12.4M/s　写 3.1M/s</text>
 
-  <text x="340" y="856" font-size="15" fill="#475569" text-anchor="middle">界面示意（深色模式）· 点击菜单栏图标打开</text>
+  <!-- GPU + Battery -->
+  <rect x="28" y="834" width="300" height="110" rx="14" fill="#1e293b"/>
+  <text x="48" y="870" font-size="22" font-weight="600" fill="#e2e8f0">GPU</text>
+  <text x="308" y="870" font-size="18" fill="#38bdf8" text-anchor="end" font-family="ui-monospace, Menlo, monospace">51%</text>
+  <rect x="48" y="890" width="260" height="12" rx="6" fill="#334155"/>
+  <rect x="48" y="890" width="133" height="12" rx="6" fill="#38bdf8"/>
+
+  <rect x="352" y="834" width="300" height="110" rx="14" fill="#1e293b"/>
+  <text x="372" y="870" font-size="22" font-weight="600" fill="#e2e8f0">电池</text>
+  <text x="632" y="870" font-size="18" fill="#34d399" text-anchor="end" font-family="ui-monospace, Menlo, monospace">100%</text>
+  <rect x="372" y="890" width="260" height="12" rx="6" fill="#334155"/>
+  <rect x="372" y="890" width="260" height="12" rx="6" fill="#34d399"/>
+  <text x="372" y="928" font-size="15" fill="#64748b">电源适配器 · 未充电</text>
+
+  <!-- Top processes -->
+  <rect x="28" y="960" width="624" height="200" rx="14" fill="#1e293b"/>
+  <text x="48" y="996" font-size="22" font-weight="600" fill="#e2e8f0">Top 进程</text>
+  <text x="632" y="996" font-size="16" fill="#64748b" text-anchor="end">每 5 秒扫描 · 面板打开时</text>
+  <g font-size="17" font-family="ui-monospace, Menlo, monospace">
+    <text x="48" y="1032" fill="#94a3b8">devecostudio</text><text x="480" y="1032" fill="#e2e8f0" text-anchor="end">3.2%</text><text x="632" y="1032" fill="#64748b" text-anchor="end">1935 MB</text>
+    <text x="48" y="1062" fill="#94a3b8">node</text><text x="480" y="1062" fill="#e2e8f0" text-anchor="end">1.8%</text><text x="632" y="1062" fill="#64748b" text-anchor="end">780 MB</text>
+    <text x="48" y="1092" fill="#94a3b8">Google Chrome</text><text x="480" y="1092" fill="#e2e8f0" text-anchor="end">1.1%</text><text x="632" y="1092" fill="#64748b" text-anchor="end">767 MB</text>
+    <text x="48" y="1122" fill="#94a3b8">Code Helper</text><text x="480" y="1122" fill="#e2e8f0" text-anchor="end">0.6%</text><text x="632" y="1122" fill="#64748b" text-anchor="end">636 MB</text>
+  </g>
+
+  <text x="340" y="1196" font-size="15" fill="#475569" text-anchor="middle">界面示意（深色模式）· 点击菜单栏图标打开</text>
 </svg>

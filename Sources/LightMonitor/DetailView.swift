@@ -13,11 +13,15 @@ struct DetailView: View {
                 if let m = s.memory { memorySection(m) }
                 networkSection(s)
                 diskSection(s.disk)
+                if let gpu = s.gpu { gpuSection(gpu) }
+                if let bat = s.battery { batterySection(bat) }
+                processSection(s)
                 settingsSection
+                alertSection
             }
             .padding(14)
         }
-        .frame(width: 340, height: 480)
+        .frame(width: 340, height: 560)
     }
 
     private func header(_ s: Snapshot) -> some View {
@@ -133,6 +137,72 @@ struct DetailView: View {
         }
     }
 
+    // MARK: GPU / Battery
+
+    private func gpuSection(_ util: Double) -> some View {
+        SectionBox(title: "GPU", trailing: Fmt.pct(util)) {
+            ProgressView(value: util)
+        }
+    }
+
+    private func batterySection(_ b: BatterySample) -> some View {
+        SectionBox(title: "电池", trailing: "\(b.percent)%") {
+            VStack(alignment: .leading, spacing: 6) {
+                ProgressView(value: Double(b.percent), total: 100)
+                HStack(spacing: 12) {
+                    Text(b.onAC ? "电源适配器" : "电池供电")
+                    if b.isCharging { Text("充电中") }
+                    if let t = b.minutesToEmpty, !b.onAC { Text("剩余约 \(t / 60) 小时 \(t % 60) 分") }
+                    if let c = b.cycleCount { Text("循环 \(c) 次") }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    // MARK: Top processes
+
+    private func processSection(_ s: Snapshot) -> some View {
+        SectionBox(title: "Top 进程", trailing: "每 5 秒扫描") {
+            VStack(alignment: .leading, spacing: 8) {
+                Picker("", selection: $settings.processSort) {
+                    Text("按 CPU").tag(0)
+                    Text("按内存").tag(1)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+
+                let list = settings.processSort == 0 ? s.topCPU : s.topMem
+                if list.isEmpty {
+                    Text("扫描中…").font(.caption).foregroundStyle(.secondary)
+                } else {
+                    ForEach(list) { p in
+                        HStack {
+                            Text(p.name).font(.caption).lineLimit(1)
+                            Spacer()
+                            if settings.processSort == 0 {
+                                Text(String(format: "%.1f%%", p.cpu))
+                                    .font(.caption.monospacedDigit())
+                                Text(p.footprint > 0 ? Fmt.bytes(p.footprint) : "—")
+                                    .font(.caption.monospacedDigit())
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 70, alignment: .trailing)
+                            } else {
+                                Text(p.footprint > 0 ? Fmt.bytes(p.footprint) : "—")
+                                    .font(.caption.monospacedDigit())
+                                Text(String(format: "%.1f%%", p.cpu))
+                                    .font(.caption.monospacedDigit())
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 56, alignment: .trailing)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // MARK: Settings
 
     private var settingsSection: some View {
@@ -142,6 +212,8 @@ struct DetailView: View {
                 Toggle("菜单栏显示内存", isOn: $settings.showRAM)
                 Toggle("菜单栏显示网络", isOn: $settings.showNet)
                 Toggle("菜单栏显示磁盘", isOn: $settings.showDisk)
+                Toggle("菜单栏显示 GPU", isOn: $settings.showGPU)
+                Toggle("菜单栏显示电池", isOn: $settings.showBattery)
                 Picker("刷新频率", selection: $settings.refreshInterval) {
                     Text("1 秒").tag(1.0)
                     Text("2 秒").tag(2.0)
@@ -159,6 +231,36 @@ struct DetailView: View {
             .toggleStyle(.switch)
             .controlSize(.small)
             .font(.caption)
+        }
+    }
+
+    // MARK: Alerts
+
+    private var alertSection: some View {
+        SectionBox(title: "阈值告警", trailing: nil) {
+            VStack(alignment: .leading, spacing: 8) {
+                Toggle("启用系统通知告警", isOn: $settings.alertsEnabled)
+                if settings.alertsEnabled {
+                    thresholdRow("CPU", value: $settings.cpuThreshold)
+                    thresholdRow("内存", value: $settings.memThreshold)
+                    thresholdRow("磁盘", value: $settings.diskThreshold)
+                    Text("超过阈值时通知一次，回落后再次超标才会再通知。")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .toggleStyle(.switch)
+            .controlSize(.small)
+            .font(.caption)
+        }
+    }
+
+    private func thresholdRow(_ label: String, value: Binding<Double>) -> some View {
+        HStack {
+            Text(label).frame(width: 36, alignment: .leading)
+            Stepper(value: value, in: 50...99, step: 5) {
+                Text("\(Int(value.wrappedValue))%").monospacedDigit()
+            }
         }
     }
 
