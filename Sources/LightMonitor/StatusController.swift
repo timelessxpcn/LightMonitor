@@ -56,6 +56,9 @@ final class StatusController: NSObject, NSPopoverDelegate {
         if settings.showBattery {
             parts.append("BAT " + (s.battery.map { "\($0.percent)%" } ?? "--"))
         }
+        if settings.showSensors {
+            parts.append("TMP " + (s.sensors?.first.map { String(format: "%.0f°", $0.value) } ?? "--"))
+        }
         let text = parts.isEmpty ? "LM" : parts.joined(separator: "  ")
         guard text != lastTitle else { return }   // 值未变化不重绘
         lastTitle = text

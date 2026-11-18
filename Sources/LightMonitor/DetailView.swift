@@ -16,6 +16,7 @@ struct DetailView: View {
                 diskSection(s.disk)
                 if let gpu = s.gpu { gpuSection(gpu) }
                 if let bat = s.battery { batterySection(bat) }
+                if let sensors = s.sensors { sensorsSection(sensors) }
                 processSection(s)
                 if settings.historyEnabled { historySection }
                 settingsSection
@@ -163,6 +164,25 @@ struct DetailView: View {
         }
     }
 
+    // MARK: Sensors
+
+    private func sensorsSection(_ sensors: [SensorReading]) -> some View {
+        SectionBox(title: "温度传感器", trailing: sensors.first.map { String(format: "最高 %.1f°C", $0.value) } ?? nil) {
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(sensors.prefix(8)) { s in
+                    HStack {
+                        Text(s.key).font(.caption.monospaced())
+                        Spacer()
+                        Text(String(format: "%.1f °C", s.value)).font(.caption.monospacedDigit())
+                    }
+                }
+                Text("SMC 热区编号，非单核温度 · 每 5 秒采样")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
     // MARK: Top processes
 
     private func processSection(_ s: Snapshot) -> some View {
@@ -259,6 +279,7 @@ struct DetailView: View {
                 Toggle("菜单栏显示磁盘", isOn: $settings.showDisk)
                 Toggle("菜单栏显示 GPU", isOn: $settings.showGPU)
                 Toggle("菜单栏显示电池", isOn: $settings.showBattery)
+                Toggle("菜单栏显示温度（SMC）", isOn: $settings.showSensors)
                 Picker("刷新频率", selection: $settings.refreshInterval) {
                     Text("1 秒").tag(1.0)
                     Text("2 秒").tag(2.0)

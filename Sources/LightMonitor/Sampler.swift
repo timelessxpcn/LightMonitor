@@ -11,6 +11,7 @@ struct Snapshot {
     var disk = DiskSample()
     var gpu: Double? = nil
     var battery: BatterySample? = nil
+    var sensors: [SensorReading]? = nil
     var topCPU: [ProcSample] = []
     var topMem: [ProcSample] = []
     var selfUsage = SelfUsage()
@@ -34,6 +35,7 @@ final class Sampler: ObservableObject {
     private let diskReader = DiskReader()
     private let gpuReader = GPUReader()
     private let batteryReader = BatteryReader()
+    private let smcReader = SMCReader()
     private let processReader = ProcessReader()
     private let selfReader = SelfUsageReader()
 
@@ -44,6 +46,8 @@ final class Sampler: ObservableObject {
 
     private var lastBattery: BatterySample? = nil
     private var lastBatteryRead: Date = .distantPast
+    private var lastSensors: [SensorReading]? = nil
+    private var lastSensorsRead: Date = .distantPast
 
     /// 面板可见性（主线程读写），用于门控 GPU/电池/进程扫描
     var panelOpen = false {
@@ -81,6 +85,7 @@ final class Sampler: ObservableObject {
                     self?.diskReader.reset()
                     self?.processReader.reset()
                     self?.lastBatteryRead = .distantPast
+                    self?.lastSensorsRead = .distantPast
                 }
             }
         }
@@ -129,6 +134,15 @@ final class Sampler: ObservableObject {
             }
             s.battery = lastBattery
         }
+        // 传感器：SMC 读取成本高，默认关闭；启用时 5s 降采样
+        if settings.showSensors || panelOpen {
+            let now = Date()
+            if now.timeIntervalSince(lastSensorsRead) >= 5 {
+                lastSensors = smcReader.read()
+                lastSensorsRead = now
+            }
+            s.sensors = lastSensors
+        }
 
         s.selfUsage = selfReader.read()
         s.timestamp = Date()
@@ -141,6 +155,7 @@ final class Sampler: ObservableObject {
         values["net_tx"] = s.netTx
         if s.disk.total > 0 { values["disk"] = Double(s.disk.used) / Double(s.disk.total) }
         if let gpu = s.gpu { values["gpu"] = gpu }
+        if let maxTemp = s.sensors?.first?.value { values["temp"] = maxTemp }
         history.record(ts: s.timestamp.timeIntervalSince1970, values: values)
 
         DispatchQueue.main.async { [weak self] in
