@@ -4,6 +4,7 @@ struct DetailView: View {
     @ObservedObject var sampler: Sampler
     @ObservedObject var settings: SettingsStore
     @ObservedObject var history: HistoryStore
+    @ObservedObject var cleaner: CleanerState
 
     var body: some View {
         let s = sampler.snapshot
@@ -82,6 +83,40 @@ struct DetailView: View {
                     Spacer()
                     pressureBadge(m.pressure)
                 }
+                purgeControl
+            }
+        }
+    }
+
+    private var purgeControl: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Button {
+                    cleaner.purge()
+                } label: {
+                    switch cleaner.status {
+                    case .running:
+                        HStack(spacing: 4) {
+                            ProgressView().controlSize(.mini)
+                            Text("清理中…")
+                        }
+                    default:
+                        Text("一键释放磁盘缓存")
+                    }
+                }
+                .controlSize(.small)
+                .disabled({ if case .idle = cleaner.status { return false }; return true }())
+                Spacer()
+            }
+            switch cleaner.status {
+            case .success(let msg):
+                Text(msg).font(.caption2).foregroundStyle(.green)
+            case .failure(let msg):
+                Text(msg).font(.caption2).foregroundStyle(.orange)
+            default:
+                Text("调用系统 purge，需管理员授权；只清磁盘缓存，不动 App 内存。")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
         }
     }

@@ -6,11 +6,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let history = HistoryStore()
     private lazy var sampler = Sampler(settings: settings, history: history)
     private let alerts = AlertManager()
+    private let cleaner = CleanerState()
     private var statusController: StatusController?
     private var cancellables = Set<AnyCancellable>()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let controller = StatusController(sampler: sampler, settings: settings, history: history)
+        let controller = StatusController(sampler: sampler, settings: settings, history: history, cleaner: cleaner)
         statusController = controller
         sampler.onSnapshot = { [weak self] snap in
             controller.update(snap)

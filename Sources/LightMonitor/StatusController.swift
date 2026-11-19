@@ -9,13 +9,15 @@ final class StatusController: NSObject, NSPopoverDelegate {
     private let sampler: Sampler
     private let settings: SettingsStore
     private let history: HistoryStore
+    private let cleaner: CleanerState
     private var lastTitle: String = ""
     private var lastTitleUpdate: Date = .distantPast
 
-    init(sampler: Sampler, settings: SettingsStore, history: HistoryStore) {
+    init(sampler: Sampler, settings: SettingsStore, history: HistoryStore, cleaner: CleanerState) {
         self.sampler = sampler
         self.settings = settings
         self.history = history
+        self.cleaner = cleaner
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         super.init()
 
@@ -75,7 +77,7 @@ final class StatusController: NSObject, NSPopoverDelegate {
             return
         }
         guard let button = statusItem.button else { return }
-        let root = DetailView(sampler: sampler, settings: settings, history: history)
+        let root = DetailView(sampler: sampler, settings: settings, history: history, cleaner: cleaner)
         let host = NSHostingController(rootView: root)
         host.view.frame = NSRect(x: 0, y: 0, width: 340, height: 560)
         popover.contentViewController = host
